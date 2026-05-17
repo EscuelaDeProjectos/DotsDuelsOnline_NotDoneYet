@@ -203,10 +203,21 @@ function gameLoop() {
 
     // Update player1 and player2 movement
 
-        if (keysPressed['w']) player1.y -= player1speed;
-        if (keysPressed['s']) player1.y += player1speed;
-        if (keysPressed['a']) player1.x -= player1speed;
-        if (keysPressed['d']) player1.x += player1speed;
+    if (keysPressed['w']) player1.y -= player1speed;
+    if (keysPressed['s']) player1.y += player1speed;
+    if (keysPressed['a']) player1.x -= player1speed;
+    if (keysPressed['d']) player1.x += player1speed;
+
+    //Map boundaries
+    if(player1.x < 0) {
+        player1.x = canvas.width
+    } else if(player1.x > canvas.width) {
+        player1.x = 0
+    } else if(player1.y < 0) {
+        player1.y = canvas.height
+    } else if(player1.y > canvas.height) {
+        player1.y = 0
+    }  
 
     
     // 3. Draw player1 and player 2
