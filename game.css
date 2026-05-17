@@ -1,0 +1,21 @@
+/*canvas { 
+    border: 3px solid white; 
+    background-color: #111; 
+    width: 80vw; 
+    height:60vh; 
+    display: block;
+}
+*/
+body {
+    flex-direction: column;
+}
+
+#title {
+    color: aqua;
+    font-size: clamp(2rem, 5vw, 4rem); 
+    
+}
+
+#Cooldowns {
+    color: aliceblue;
+}
