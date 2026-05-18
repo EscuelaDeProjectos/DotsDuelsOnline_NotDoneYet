@@ -12,19 +12,35 @@
         <h1 id="title">Online</h1>
 
         <form id="authPanel" class="auth-panel" onsubmit="return false;">
-            <div id="welcomeBanner" class="welcome-banner" style="display:none;"></div>
             <div id="messages" class="auth-message"></div>
             <input id="nameInput" name="username" autocomplete="username" placeholder="Enter name" class="auth-input" />
             <input id="passwordInput" name="password" type="password" autocomplete="current-password" placeholder="Enter password" class="auth-input" />
             <div class="auth-buttons">
                 <button type="button" id="registerBtn" class="auth-button">Register</button>
                 <button type="button" id="loginBtn" class="auth-button">Login</button>
-                <button type="button" id="goGameBtn" class="auth-button auth-game-button">Go to Game</button>
-                <button type="button" id="logoutBtn" class="auth-button auth-logout-button" style="display:none;">Logout</button>
             </div>
         </form>
 
-        <canvas id="gameCanvas" width="900" height="700" style="display:none"></canvas>
+        <div id="homePanel" class="home-panel" style="display:none;">
+            <div id="homeUsername" class="home-username"></div>
+            <button id="playBtn" class="auth-button play-button">Play</button>
+            <button id="matchmakingBtn" class="auth-button matchmaking-button">Matchmaking</button>
+        </div>
+
+        <div id="battlePanel" class="battle-panel" style="display:none;">
+            <div class="battle-header">
+                <div id="battleUsername" class="battle-username"></div>
+                <div id="cooldownHud" class="cooldown-hud">
+                    <span>Q: <span id="QCooldown">Ready</span></span>
+                    <span>E: <span id="ECooldown">Ready</span></span>
+                    <span>F: <span id="FCooldown">Ready</span></span>
+                    <span>R: <span id="RCooldown">Ready</span></span>
+                    <span>C: <span id="CCooldown">Ready</span></span>
+                </div>
+            </div>
+            <canvas id="gameCanvas" width="900" height="700"></canvas>
+        </div>
+
         <div id="gameOverOverlay" class="game-over-overlay" style="display:none;">
             <div class="game-over-card">
                 <h2>Game Over</h2>
@@ -36,14 +52,6 @@
         </div>
         <script src="./auth.js"></script>
         <script src="./game.js"></script>
-
-        <h3 id="Cooldowns">
-            Q Cooldown <span id="QCooldown">Ready</span>
-            E Cooldown <span id="ECooldown"></span>
-            F Cooldown <span id="FCooldown"></span>
-            R Cooldown <span id="RCooldown"></span>
-            C Cooldown <span id="CCooldown"></span>
-        </h3>
 
     </body>
 </html>
