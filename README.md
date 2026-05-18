@@ -1,6 +1,7 @@
 # Hey Welcome to DotsDuelsOnline
 
 This will be a  multiplayer game about of  duels of dots, with many diffrent abilities.
+https://github.com/user-attachments/assets/aef59a4d-5f87-42c7-88b7-0716be89a2d5
 
 It wll be a very skilled game!!!!!!!!.
 
@@ -15,11 +16,13 @@ Here are some images of the game:
 2. Homepage Section
 
 3. Pratice Section
+4. 
+https://github.com/user-attachments/assets/a37c843b-f90d-41b1-b1b3-a2b835424b4f
 
-4. Matchmaking against other players
+5. Matchmaking against other players
 
-5. LeaderBoard
+6. LeaderBoard
 
-6. Game over 
+7. Game over 
 
 
