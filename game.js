@@ -2,7 +2,7 @@ const canvas = document.getElementById('gameCanvas');
 const ctx = canvas.getContext('2d');
 
 // Game Objects
-const player1 = { x: 0, y: 0, size: 10, color: 'blue' }; 
+const player1 = { x: 0, y: 0, size: 10, color: 'blue', hp: 200, maxHp: 200, class: 0, lastHitAt: 0, invulnDuration: 500 }; 
 const projectiles = [];
 
 //fireball q
@@ -39,12 +39,18 @@ const dashCooldown = 5000;
 player1.x =  canvas.width /2 
 player1.y = canvas.height /20
 
-
-
 // Track the mouse position
 let mouseX = 400;
 let mouseY = 300;
 const keysPressed = {};
+
+//Total player hp: 200.
+//Fireball = 10 dmg
+//Purple Square = 30 dmg
+//SuperFireball = 50 dmg 
+//Windwall = 0 dmg
+//Dash = 0 dmg
+
 
 
 
@@ -89,7 +95,8 @@ window.addEventListener('keyup', (e) => {
                 vy: (dy / distance) * fireballSpeed,
                 size: 5,
                 color: 'red',
-                type: 'fireball'
+                type: 'fireball',
+                owner: 'player1'
             });
             lastFireballTime = Date.now(); // Update last shot time
         }
@@ -112,7 +119,8 @@ window.addEventListener('keyup', (e) => {
                 vy: (dy / distance) * fireballSpeed,
                 size: 12,
                 color: 'purple',
-                type: 'purple'
+                type: 'purple',
+                owner: 'player1'
             });
             lastPurpleTime = Date.now();
         }
@@ -170,7 +178,8 @@ window.addEventListener('keyup', (e) => {
                 vy: (dy / distance) * superFireballSpeed,
                 size: 50,
                 color: 'red',
-                type: 'superFireball'
+                type: 'superFireball',
+                owner: 'player1'
             });
             lastSuperFireballTime = Date.now(); // Update last shot time
         }
@@ -207,7 +216,6 @@ window.addEventListener('keyup', (e) => {
 });
 
 
-
 // Game Loop
 function gameLoop() {
     const player1speed = 3;
@@ -223,7 +231,7 @@ function gameLoop() {
         projectile.x += projectile.vx;
         projectile.y += projectile.vy;
 
-        // Check collision with wind wall
+        // Check collision with wind wall of SuperFireball and Fireball
         if (windWall) {
 
             if(projectile.type === 'superFireball') {
@@ -244,6 +252,7 @@ function gameLoop() {
                     localY < windWall.height / 2 ) {
                     windWall = null;
                     projectiles.splice(i, 1);
+                    
                     continue;
                 }
             } else {
@@ -268,6 +277,7 @@ function gameLoop() {
             
         }
 
+        //Check Collision for Purple
         if (projectile.type === 'purple') {
             const halfSize = projectile.size / 2;
             ctx.beginPath();
@@ -284,6 +294,60 @@ function gameLoop() {
             ctx.arc(projectile.x, projectile.y, projectile.size, 0, Math.PI * 2);
             ctx.fillStyle = projectile.color;
             ctx.fill();
+        }
+
+        //Check Collision of ability with player
+
+        if (player1) {
+            // Don't allow player to be hit by their own projectiles.
+            if (projectile.owner && projectile.owner === 'player1') {
+                // skip collision with own projectile
+            } else {
+                const now = Date.now();
+                const canBeHit = now - (player1.lastHitAt || 0) >= (player1.invulnDuration || 0);
+
+                if (canBeHit) {
+                    // Purple is a square (rendered centered)
+                    if (projectile.type === 'purple') {
+                        const halfSize = projectile.size / 2;
+                        const rectX = projectile.x - halfSize;
+                        const rectY = projectile.y - halfSize;
+                        const rectW = projectile.size;
+                        const rectH = projectile.size;
+
+                        // Closest point from circle center to rectangle
+                        const closestX = Math.max(rectX, Math.min(player1.x, rectX + rectW));
+                        const closestY = Math.max(rectY, Math.min(player1.y, rectY + rectH));
+                        const dxp = player1.x - closestX;
+                        const dyp = player1.y - closestY;
+
+                        if (dxp * dxp + dyp * dyp <= player1.size * player1.size) {
+                            const dmg = 30;
+                            player1.hp = Math.max(0, player1.hp - dmg);
+                            player1.lastHitAt = now;
+                            projectiles.splice(i, 1);
+                            console.log('Player hit by purple. HP:', player1.hp);
+                            continue;
+                        }
+
+                    } else {
+                        // fireball and superFireball are circles
+                        const dxp = projectile.x - player1.x;
+                        const dyp = projectile.y - player1.y;
+                        const distSq = dxp * dxp + dyp * dyp;
+                        const hitRadius = projectile.size + player1.size;
+
+                        if (distSq <= hitRadius * hitRadius) {
+                            const dmg = projectile.type === 'superFireball' ? 50 : 10;
+                            player1.hp = Math.max(0, player1.hp - dmg);
+                            player1.lastHitAt = now;
+                            projectiles.splice(i, 1);
+                            console.log('Player hit by', projectile.type, 'HP:', player1.hp);
+                            continue;
+                        }
+                    }
+                }
+            }
         }
 
         if (projectile.x < 0 || projectile.x > canvas.width || projectile.y < 0 || projectile.y > canvas.height) {
@@ -315,6 +379,36 @@ function gameLoop() {
     ctx.arc(player1.x, player1.y, player1.size, 0, Math.PI * 2);
     ctx.fillStyle = player1.color;
     ctx.fill();
+
+    // Draw floating HP label above the player
+    const labelPadding = 4;
+    const labelText = 'HP: ' + player1.hp + '/' + player1.maxHp;
+    ctx.font = '12px sans-serif';
+    const textMetrics = ctx.measureText(labelText);
+    const labelWidth = textMetrics.width + labelPadding * 2;
+    const labelHeight = 12 + labelPadding * 2;
+    const labelX = player1.x - labelWidth / 2;
+    const labelY = player1.y - player1.size - labelHeight - 4; // 4px gap above player
+
+    // Background
+    ctx.fillStyle = 'rgba(0,0,0,0.7)';
+    ctx.fillRect(labelX - 1, labelY - 1, labelWidth + 2, labelHeight + 2);
+
+    // Small HP bar inside the label
+    const hpRatio = Math.max(0, player1.hp) / (player1.maxHp || 1);
+    const barW = labelWidth - labelPadding * 2;
+    const barH = 8;
+    const barX = labelX + labelPadding;
+    const barY = labelY + 4;
+    ctx.fillStyle = 'gray';
+    ctx.fillRect(barX, barY, barW, barH);
+    ctx.fillStyle = hpRatio > 0.5 ? 'green' : (hpRatio > 0.2 ? 'orange' : 'red');
+    ctx.fillRect(barX, barY, barW * hpRatio, barH);
+
+    // Text
+    ctx.fillStyle = 'white';
+    ctx.textBaseline = 'top';
+    ctx.fillText(labelText, labelX + labelPadding, barY + barH + 2);
 
 
     // 4. Draw Wind Wall and check if it expired
