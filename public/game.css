@@ -87,6 +87,11 @@ body {
     color: #07111f;
 }
 
+.game-over-home-button {
+    background: #f96d6d;
+    color: #07111f;
+}
+
 .welcome-banner {
     display: none;
     background: rgba(69, 191, 117, 0.14);

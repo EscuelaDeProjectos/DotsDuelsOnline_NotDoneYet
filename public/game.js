@@ -1,12 +1,11 @@
 const canvas = document.getElementById('gameCanvas');
 const ctx = canvas.getContext('2d');
 const gameOverOverlay = document.getElementById('gameOverOverlay');
-const restartGameBtn = document.getElementById('restartGameBtn');
 const homeBtn = document.getElementById('homeBtn');
 let gameOver = false;
 
 // Game Objects
-const player1 = { x: 0, y: 0, size: 10, color: 'blue', hp: 200, maxHp: 200, class: 0, lastHitAt: 0, invulnDuration: 500 }; 
+const player1 = { x: 0, y: 0, size: 10, color: 'blue', hp: 200, maxHp: 200, class: 0, lastHitAt: 0, invulnDuration: 150 }; 
 // Test player2 (can launch Q/E/R-like attacks using keys 1/2/3)
 const player2 = { x: canvas.width - 100, y: canvas.height / 2, size: 10, color: 'red', id: 'player2' };
 const projectiles = [];
@@ -294,6 +293,8 @@ function gameLoop() {
     // 2. Update and Draw Projectiles
     for (let i = projectiles.length - 1; i >= 0; i--) {
         const projectile = projectiles[i];
+        const previousX = projectile.x;
+        const previousY = projectile.y;
         
         projectile.x += projectile.vx;
         projectile.y += projectile.vy;
@@ -366,52 +367,33 @@ function gameLoop() {
         //Check Collision of ability with player
 
         if (player1) {
-            // Don't allow player to be hit by their own projectiles.
-            if (projectile.owner && projectile.owner === 'player1') {
-                // skip collision with own projectile
-            } else {
+            if (projectile.owner !== 'player1') {
+                if (gameOver || player1.hp <= 0) {
+                    continue;
+                }
                 const now = Date.now();
                 const canBeHit = now - (player1.lastHitAt || 0) >= (player1.invulnDuration || 0);
 
                 if (canBeHit) {
-                    // Purple is a square (rendered centered)
-                    if (projectile.type === 'purple') {
-                        const halfSize = projectile.size / 2;
-                        const rectX = projectile.x - halfSize;
-                        const rectY = projectile.y - halfSize;
-                        const rectW = projectile.size;
-                        const rectH = projectile.size;
+                    const projectileRadius = projectile.type === 'purple' ? projectile.size / 2 : projectile.size;
+                    const hitRadius = player1.size + projectileRadius;
+                    const collided = segmentCircleCollision(
+                        player1.x,
+                        player1.y,
+                        hitRadius,
+                        previousX,
+                        previousY,
+                        projectile.x,
+                        projectile.y
+                    );
 
-                        // Closest point from circle center to rectangle
-                        const closestX = Math.max(rectX, Math.min(player1.x, rectX + rectW));
-                        const closestY = Math.max(rectY, Math.min(player1.y, rectY + rectH));
-                        const dxp = player1.x - closestX;
-                        const dyp = player1.y - closestY;
-
-                        if (dxp * dxp + dyp * dyp <= player1.size * player1.size) {
-                            const dmg = 30;
-                            player1.hp = Math.max(0, player1.hp - dmg);
-                            player1.lastHitAt = now;
-                            projectiles.splice(i, 1);
-                            console.log('Player hit by purple. HP:', player1.hp);
-                            continue;
-                        }
-
-                    } else {
-                        // fireball and superFireball are circles
-                        const dxp = projectile.x - player1.x;
-                        const dyp = projectile.y - player1.y;
-                        const distSq = dxp * dxp + dyp * dyp;
-                        const hitRadius = projectile.size + player1.size;
-
-                        if (distSq <= hitRadius * hitRadius) {
-                            const dmg = projectile.type === 'superFireball' ? 50 : 10;
-                            player1.hp = Math.max(0, player1.hp - dmg);
-                            player1.lastHitAt = now;
-                            projectiles.splice(i, 1);
-                            console.log('Player hit by', projectile.type, 'HP:', player1.hp);
-                            continue;
-                        }
+                    if (collided) {
+                        const dmg = projectile.type === 'superFireball' ? 50 : (projectile.type === 'purple' ? 30 : 10);
+                        player1.hp = Math.max(0, player1.hp - dmg);
+                        player1.lastHitAt = now;
+                        projectiles.splice(i, 1);
+                        console.log('Player hit by', projectile.type, 'HP:', player1.hp);
+                        continue;
                     }
                 }
             }
@@ -424,6 +406,10 @@ function gameLoop() {
 
     if (player1.hp <= 0 && !gameOver) {
         showGameOver();
+    }
+
+    if (gameOver) {
+        requestAnimationFrame(gameLoop);
         return;
     }
 
@@ -539,6 +525,22 @@ function gameLoop() {
     requestAnimationFrame(gameLoop);
 }
 
+function segmentCircleCollision(cx, cy, radius, x1, y1, x2, y2) {
+    const vx = x2 - x1;
+    const vy = y2 - y1;
+    const dx = cx - x1;
+    const dy = cy - y1;
+    const lenSq = vx * vx + vy * vy;
+    if (lenSq === 0) {
+        return dx * dx + dy * dy <= radius * radius;
+    }
+    const t = Math.max(0, Math.min(1, (dx * vx + dy * vy) / lenSq));
+    const closestX = x1 + vx * t;
+    const closestY = y1 + vy * t;
+    const distSq = (cx - closestX) * (cx - closestX) + (cy - closestY) * (cy - closestY);
+    return distSq <= radius * radius;
+}
+
 function showGameOver() {
     gameOver = true;
     if (gameOverOverlay) {
@@ -558,13 +560,6 @@ function resetGame() {
     if (gameOverOverlay) {
         gameOverOverlay.style.display = 'none';
     }
-}
-
-if (restartGameBtn) {
-    restartGameBtn.addEventListener('click', () => {
-        resetGame();
-        gameLoop();
-    });
 }
 
 if (homeBtn) {
