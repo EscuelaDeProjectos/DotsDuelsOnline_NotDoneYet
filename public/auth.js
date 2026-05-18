@@ -140,6 +140,11 @@ window.addEventListener('DOMContentLoaded', () => {
       if (typeof resetGame === 'function') resetGame();
       const canvas = document.getElementById('gameCanvas');
       if (canvas) canvas.style.display = 'block';
+      // connect socket and join match room
+      if (window.io) {
+        window.socket = window.io();
+        window.socket.emit('join_match', { matchId: window.matchId, playerId: player.id, playerName: player.name });
+      }
       showMessage(`Found opponent: ${data.opponent.name}! Fight!`, 'lightgreen');
     } else {
       // Poll for match
@@ -164,6 +169,10 @@ window.addEventListener('DOMContentLoaded', () => {
             if (typeof resetGame === 'function') resetGame();
             const canvas = document.getElementById('gameCanvas');
             if (canvas) canvas.style.display = 'block';
+            if (window.io) {
+              window.socket = window.io();
+              window.socket.emit('join_match', { matchId: window.matchId, playerId: player.id, playerName: player.name });
+            }
             showMessage(`Found opponent: ${pollData.opponent.name}! Fight!`, 'lightgreen');
           }
         } catch (err) {

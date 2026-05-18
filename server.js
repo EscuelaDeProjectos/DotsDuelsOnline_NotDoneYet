@@ -3,12 +3,17 @@ const express = require('express');
 const sqlite3 = require('sqlite3').verbose();
 const bodyParser = require('body-parser');
 const bcrypt = require('bcryptjs');
+const http = require('http');
+const { Server } = require('socket.io');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
 
 app.use(bodyParser.json());
 app.use(express.static(path.join(__dirname, 'public')));
+
+const server = http.createServer(app);
+const io = new Server(server);
 
 const dbPath = path.join(__dirname, 'database', 'app.db');
 const db = new sqlite3.Database(dbPath, (err) => {
@@ -71,6 +76,49 @@ app.post('/api/login', (req, res) => {
 const matchmakingQueue = [];
 // Temporary store to notify waiting players when a match is found
 const pendingMatches = {}; // keyed by playerId -> { matched:true, matchId, opponent }
+
+// Socket.io: track socket -> player mapping and match rooms
+const socketPlayerMap = new Map(); // socket.id -> { playerId, name }
+
+io.on('connection', (socket) => {
+  socket.on('join_match', (data) => {
+    const { matchId, playerId, playerName } = data || {};
+    if (!matchId || !playerId) return;
+    socket.join(matchId);
+    socketPlayerMap.set(socket.id, { playerId, playerName, matchId });
+
+    // Notify others in room that this player joined
+    socket.to(matchId).emit('player_joined', { playerId, playerName });
+  });
+
+  socket.on('player_update', (data) => {
+    const { matchId } = data || {};
+    if (!matchId) return;
+    // Broadcast to other clients in the same match
+    socket.to(matchId).emit('player_update', data);
+  });
+
+  socket.on('ability_fire', (data) => {
+    const { matchId } = data || {};
+    if (!matchId) return;
+    socket.to(matchId).emit('ability_fire', data);
+  });
+
+  socket.on('match_end', (data) => {
+    const { matchId, winnerId, loserId } = data || {};
+    if (!matchId) return;
+    // broadcast match end to room
+    io.to(matchId).emit('match_end', { winnerId, loserId });
+  });
+
+  socket.on('disconnect', () => {
+    const info = socketPlayerMap.get(socket.id);
+    if (info && info.matchId) {
+      socket.to(info.matchId).emit('player_left', { playerId: info.playerId });
+    }
+    socketPlayerMap.delete(socket.id);
+  });
+});
 
 // Join matchmaking queue
 app.post('/api/matchmaking/join', (req, res) => {
@@ -198,4 +246,4 @@ app.get('/api/player/stats/:playerId', (req, res) => {
   );
 });
 
-app.listen(PORT, () => console.log(`Server listening on http://localhost:${PORT}`));
+server.listen(PORT, () => console.log(`Server listening on http://localhost:${PORT}`));
