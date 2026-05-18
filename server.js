@@ -67,4 +67,135 @@ app.post('/api/login', (req, res) => {
   });
 });
 
+// Matchmaking queue (in-memory for simplicity)
+const matchmakingQueue = [];
+// Temporary store to notify waiting players when a match is found
+const pendingMatches = {}; // keyed by playerId -> { matched:true, matchId, opponent }
+
+// Join matchmaking queue
+app.post('/api/matchmaking/join', (req, res) => {
+  const { playerId, playerName } = req.body;
+  if (!playerId || !playerName) return res.status(400).json({ error: 'Player info required' });
+
+  // Check if already in queue
+  if (matchmakingQueue.find(p => p.playerId === playerId)) {
+    return res.status(400).json({ error: 'Already in queue' });
+  }
+
+  // If queue is empty, add and wait
+  if (matchmakingQueue.length === 0) {
+    matchmakingQueue.push({ playerId, playerName, joinedAt: Date.now() });
+    return res.json({ matched: false, message: 'Waiting for opponent...' });
+  }
+
+  // Match with first player in queue
+  const opponent = matchmakingQueue.shift();
+  const matchId = `match_${Date.now()}`;
+
+  // Notify the joining player immediately
+  res.json({
+    matched: true,
+    matchId,
+    opponent: { id: opponent.playerId, name: opponent.playerName },
+    player: { id: playerId, name: playerName },
+  });
+
+  // Store pending match for the opponent so they can be notified when they poll
+  pendingMatches[opponent.playerId] = {
+    matched: true,
+    matchId,
+    opponent: { id: playerId, name: playerName },
+  };
+});
+
+// Leave matchmaking queue
+app.post('/api/matchmaking/leave', (req, res) => {
+  const { playerId } = req.body;
+  const idx = matchmakingQueue.findIndex(p => p.playerId === playerId);
+  if (idx >= 0) {
+    matchmakingQueue.splice(idx, 1);
+  }
+  // Clear any pending match notifications for this player
+  if (pendingMatches[playerId]) delete pendingMatches[playerId];
+  res.json({ left: true });
+});
+
+// Poll matchmaking status for a player to see if they've been matched
+app.post('/api/matchmaking/status', (req, res) => {
+  const { playerId } = req.body;
+  if (!playerId) return res.status(400).json({ error: 'Player ID required' });
+
+  const pending = pendingMatches[playerId];
+  if (pending) {
+    // Once delivered, remove pending notification
+    delete pendingMatches[playerId];
+    return res.json({ matched: true, matchId: pending.matchId, opponent: pending.opponent });
+  }
+
+  return res.json({ matched: false });
+});
+
+// Get leaderboard (top 10)
+app.get('/api/leaderboard', (req, res) => {
+  const query = `
+    SELECT p.name, ps.wins, ps.losses 
+    FROM player_stats ps
+    JOIN players p ON p.id = ps.player_id
+    ORDER BY ps.wins DESC
+    LIMIT 10
+  `;
+  db.all(query, (err, rows) => {
+    if (err) return res.status(500).json({ error: 'DB error' });
+    res.json(rows || []);
+  });
+});
+
+// Record match result
+app.post('/api/match/result', (req, res) => {
+  const { winnerId, loserId } = req.body;
+  if (!winnerId || !loserId) return res.status(400).json({ error: 'Winner and loser IDs required' });
+
+  // Record match
+  db.run(
+    `INSERT INTO matches (player1_id, player2_id, winner_id) VALUES (?, ?, ?)`,
+    [winnerId, loserId, winnerId],
+    (err) => {
+      if (err) console.error('Match insert error:', err);
+    }
+  );
+
+  // Update winner stats
+  db.run(
+    `UPDATE player_stats SET wins = wins + 1 WHERE player_id = ?`,
+    [winnerId],
+    (err) => {
+      if (err) console.error('Winner stats update error:', err);
+    }
+  );
+
+  // Update loser stats
+  db.run(
+    `UPDATE player_stats SET losses = losses + 1 WHERE player_id = ?`,
+    [loserId],
+    (err) => {
+      if (err) console.error('Loser stats update error:', err);
+    }
+  );
+
+  res.json({ recorded: true });
+});
+
+// Get player stats
+app.get('/api/player/stats/:playerId', (req, res) => {
+  const { playerId } = req.params;
+  db.get(
+    `SELECT wins, losses FROM player_stats WHERE player_id = ?`,
+    [playerId],
+    (err, row) => {
+      if (err) return res.status(500).json({ error: 'DB error' });
+      res.json(row || { wins: 0, losses: 0 });
+    }
+  );
+});
+
 app.listen(PORT, () => console.log(`Server listening on http://localhost:${PORT}`));

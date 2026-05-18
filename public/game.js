@@ -22,6 +22,19 @@ const player1 = {
   lastHitAt: 0,
   invulnDuration: 150,
 };
+
+// Player 2 - opponent (practice dummy or multiplayer opponent)
+const player2 = {
+  x: 0,
+  y: 0,
+  size: 10,
+  color: 'red',
+  hp: 200,
+  maxHp: 200,
+  lastHitAt: 0,
+  invulnDuration: 150,
+};
+
 const projectiles = [];
 
 // Ability settings
@@ -47,8 +60,14 @@ const superFireballCooldown = 30000;
 let lastDashTime = 0;
 const dashCooldown = 5000;
 
+// AI for practice dummy
+let lastAIAbilityTime = 0;
+const aiAbilityCooldown = 1500;
+
 player1.x = canvas.width / 2;
 player1.y = canvas.height / 20;
+player2.x = canvas.width / 2;
+player2.y = canvas.height - 50;
 
 let mouseX = 400;
 let mouseY = 300;
@@ -70,17 +89,37 @@ function updateCooldownHud() {
   cCooldownSpan.textContent = getCooldownText(lastDashTime, dashCooldown);
 }
 
-// Input Listeners
+// AI practice dummy logic
+function updateAI() {
+  if (window.gameMode !== 'practice') return;
+
+  const now = Date.now();
+  if (now - lastAIAbilityTime < aiAbilityCooldown) return;
+
+  const dx = player1.x - player2.x;
+  const dy = player1.y - player2.y;
+  const distance = Math.hypot(dx, dy);
+
+  if (distance > 0 && Math.random() < 0.7) {
+    projectiles.push({
+      x: player2.x,
+      y: player2.y,
+      vx: (dx / distance) * fireballSpeed,
+      vy: (dy / distance) * fireballSpeed,
+      size: 5,
+      color: 'red',
+      type: 'fireball',
+      owner: 'player2',
+    });
+    lastAIAbilityTime = now;
+  }
+}
+// Input handlers: keydown to trigger abilities/movement, keyup to clear movement
 window.addEventListener('keydown', (e) => {
-  if (!e || !e.key) return;
-  keysPressed[e.key.toLowerCase()] = true;
-});
+  const k = e.key.toLowerCase();
+  keysPressed[k] = true;
 
-window.addEventListener('keyup', (e) => {
-  if (!e || !e.key) return;
-  keysPressed[e.key.toLowerCase()] = false;
-
-  if (e.key.toLowerCase() === 'q') {
+  if (k === 'q') {
     const elapsed = Date.now() - lastFireballTime;
     if (elapsed >= fireballCooldown) {
       const dx = mouseX - player1.x;
@@ -102,7 +141,7 @@ window.addEventListener('keyup', (e) => {
     }
   }
 
-  if (e.key.toLowerCase() === 'e') {
+  if (k === 'e') {
     const elapsed = Date.now() - lastPurpleTime;
     if (elapsed >= purpleCooldown) {
       const dx = mouseX - player1.x;
@@ -124,7 +163,7 @@ window.addEventListener('keyup', (e) => {
     }
   }
 
-  if (e.key.toLowerCase() === 'f') {
+  if (k === 'f') {
     const elapsed = Date.now() - lastWindWallTime;
     if (elapsed >= windWallCooldown) {
       const dx = mouseX - player1.x;
@@ -148,7 +187,7 @@ window.addEventListener('keyup', (e) => {
     }
   }
 
-  if (e.key.toLowerCase() === 'r') {
+  if (k === 'r') {
     const elapsed = Date.now() - lastSuperFireballTime;
     if (elapsed >= superFireballCooldown) {
       const dx = mouseX - player1.x;
@@ -170,7 +209,7 @@ window.addEventListener('keyup', (e) => {
     }
   }
 
-  if (e.key.toLowerCase() === 'c') {
+  if (k === 'c') {
     const elapsed = Date.now() - lastDashTime;
     if (elapsed >= dashCooldown) {
       const dx = mouseX - player1.x;
@@ -184,6 +223,10 @@ window.addEventListener('keyup', (e) => {
       }
     }
   }
+});
+
+window.addEventListener('keyup', (e) => {
+  keysPressed[e.key.toLowerCase()] = false;
 });
 
 window.addEventListener('mousemove', (e) => {
@@ -268,6 +311,32 @@ function gameLoop() {
       }
     }
 
+    // Check collision with player2
+    if (projectile.owner === 'player1') {
+      const now = Date.now();
+      const canBeHit = now - player2.lastHitAt >= player2.invulnDuration;
+      if (canBeHit) {
+        const projectileRadius = projectile.type === 'purple' ? projectile.size / 2 : projectile.size;
+        const hitRadius = player2.size + projectileRadius;
+        const collided = segmentCircleCollision(
+          player2.x,
+          player2.y,
+          hitRadius,
+          previousX,
+          previousY,
+          projectile.x,
+          projectile.y
+        );
+        if (collided) {
+          const dmg = projectile.type === 'superFireball' ? 50 : projectile.type === 'purple' ? 30 : 10;
+          player2.hp = Math.max(0, player2.hp - dmg);
+          player2.lastHitAt = now;
+          projectiles.splice(i, 1);
+          continue;
+        }
+      }
+    }
+
     if (
       projectile.x < 0 ||
       projectile.x > canvas.width ||
@@ -279,13 +348,19 @@ function gameLoop() {
   }
 
   if (player1.hp <= 0 && !gameOver) {
-    showGameOver();
+    showGameOver(false); // player1 lost
+  }
+
+  if (player2.hp <= 0 && !gameOver) {
+    showGameOver(true); // player1 won
   }
 
   if (gameOver) {
     requestAnimationFrame(gameLoop);
     return;
   }
+
+  updateAI();
 
   if (keysPressed['w']) player1.y -= player1speed;
   if (keysPressed['s']) player1.y += player1speed;
@@ -302,6 +377,7 @@ function gameLoop() {
   ctx.fillStyle = player1.color;
   ctx.fill();
 
+  // Draw player1 HP label
   const labelPadding = 4;
   const labelText = `HP: ${player1.hp}/${player1.maxHp}`;
   ctx.font = '12px sans-serif';
@@ -327,6 +403,37 @@ function gameLoop() {
   ctx.fillStyle = 'white';
   ctx.textBaseline = 'top';
   ctx.fillText(labelText, labelX + labelPadding, barY + barH + 2);
+
+  // Draw player2 (opponent)
+  ctx.beginPath();
+  ctx.arc(player2.x, player2.y, player2.size, 0, Math.PI * 2);
+  ctx.fillStyle = player2.color;
+  ctx.fill();
+
+  // Draw player2 HP label
+  const label2Text = `HP: ${player2.hp}/${player2.maxHp}`;
+  const textMetrics2 = ctx.measureText(label2Text);
+  const label2Width = textMetrics2.width + labelPadding * 2;
+  const label2Height = 12 + labelPadding * 2;
+  const label2X = player2.x - label2Width / 2;
+  const label2Y = player2.y - player2.size - label2Height - 4;
+
+  ctx.fillStyle = 'rgba(0,0,0,0.7)';
+  ctx.fillRect(label2X - 1, label2Y - 1, label2Width + 2, label2Height + 2);
+
+  const hp2Ratio = Math.max(0, player2.hp) / player2.maxHp;
+  const bar2W = label2Width - labelPadding * 2;
+  const bar2H = 8;
+  const bar2X = label2X + labelPadding;
+  const bar2Y = label2Y + 4;
+  ctx.fillStyle = 'gray';
+  ctx.fillRect(bar2X, bar2Y, bar2W, bar2H);
+  ctx.fillStyle = hp2Ratio > 0.5 ? 'green' : hp2Ratio > 0.2 ? 'orange' : 'red';
+  ctx.fillRect(bar2X, bar2Y, bar2W * hp2Ratio, bar2H);
+
+  ctx.fillStyle = 'white';
+  ctx.textBaseline = 'top';
+  ctx.fillText(label2Text, label2X + labelPadding, bar2Y + bar2H + 2);
 
   if (windWall) {
     const elapsed = Date.now() - windWall.createdAt;
@@ -365,10 +472,31 @@ function segmentCircleCollision(cx, cy, radius, x1, y1, x2, y2) {
   return distSq <= radius * radius;
 }
 
-function showGameOver() {
+function showGameOver(playerWon) {
   gameOver = true;
   if (gameOverOverlay) {
     gameOverOverlay.style.display = 'flex';
+    const gameOverText = document.getElementById('gameOverText');
+    if (playerWon) {
+      gameOverText.textContent = 'You won! Great job!';
+      gameOverText.style.color = '#90EE90';
+    } else {
+      gameOverText.textContent = 'You have been defeated.';
+      gameOverText.style.color = '#ff6b6b';
+    }
+  }
+
+  // Send match result to backend if multiplayer
+  if (window.gameMode === 'multiplayer' && window.opponent) {
+    const player = JSON.parse(localStorage.getItem('player'));
+    const winnerId = playerWon ? player.id : window.opponent.id;
+    const loserId = playerWon ? window.opponent.id : player.id;
+
+    fetch('/api/match/result', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ winnerId, loserId }),
+    }).catch((e) => console.error('Failed to send match result:', e));
   }
 }
 
@@ -378,8 +506,13 @@ function resetGame() {
   player1.x = canvas.width / 2;
   player1.y = canvas.height / 20;
   player1.lastHitAt = 0;
+  player2.hp = player2.maxHp;
+  player2.x = canvas.width / 2;
+  player2.y = canvas.height - 50;
+  player2.lastHitAt = 0;
   projectiles.length = 0;
   windWall = null;
+  lastAIAbilityTime = 0;
   Object.keys(keysPressed).forEach((key) => {
     keysPressed[key] = false;
   });
@@ -391,6 +524,8 @@ function resetGame() {
 if (homeBtn) {
   homeBtn.addEventListener('click', () => {
     resetGame();
+    const homePanel = document.getElementById('homePanel');
+    const battlePanel = document.getElementById('battlePanel');
     canvas.style.display = 'none';
     if (battlePanel) battlePanel.style.display = 'none';
     if (homePanel) homePanel.style.display = 'block';

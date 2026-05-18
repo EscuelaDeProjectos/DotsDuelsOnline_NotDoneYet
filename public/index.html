@@ -23,8 +23,9 @@
 
         <div id="homePanel" class="home-panel" style="display:none;">
             <div id="homeUsername" class="home-username"></div>
-            <button id="playBtn" class="auth-button play-button">Play</button>
+            <button id="practiceBtn" class="auth-button practice-button">Practice</button>
             <button id="matchmakingBtn" class="auth-button matchmaking-button">Matchmaking</button>
+            <button id="leaderboardBtn" class="auth-button leaderboard-button">Leaderboard</button>
         </div>
 
         <div id="battlePanel" class="battle-panel" style="display:none;">
@@ -50,6 +51,23 @@
                 </div>
             </div>
         </div>
+
+        <div id="leaderboardOverlay" class="leaderboard-overlay" style="display:none;">
+            <div class="leaderboard-card">
+                <h2>Leaderboard</h2>
+                <div id="leaderboardContent" class="leaderboard-content"></div>
+                <button id="closeLeaderboardBtn" class="auth-button leaderboard-close-button">Close</button>
+            </div>
+        </div>
+
+        <div id="matchmakingOverlay" class="matchmaking-overlay" style="display:none;">
+            <div class="matchmaking-card">
+                <h2>Finding Opponent...</h2>
+                <p id="matchmakingStatus">Searching for players...</p>
+                <button id="cancelMatchmakingBtn" class="auth-button matchmaking-cancel-button">Cancel</button>
+            </div>
+        </div>
+
         <script src="./auth.js"></script>
         <script src="./game.js"></script>
 
