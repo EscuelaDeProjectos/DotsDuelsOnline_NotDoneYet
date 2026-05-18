@@ -3,7 +3,6 @@ const ctx = canvas.getContext('2d');
 
 // Game Objects
 const player1 = { x: 0, y: 0, size: 10, color: 'blue' }; 
-
 const projectiles = [];
 
 //fireball q
@@ -14,7 +13,7 @@ const fireballCooldown = 150;
 // Purple E
 const purpleCooldown = 10000;
 let lastPurpleTime = 0; // Track last purple square ability time
-//morgrana stun duration 2seconds
+//e stun duration 1.5seconds
 
 //WindaWall F
 let windWall = null; 
@@ -25,6 +24,10 @@ const windWallHeight = 75;
 const windWallOffset = 50; // Distance in front of player to spawn the wall
 const windWallCooldown = 15000;
 
+//Super Fireball R
+let lastSuperFireballTime = 0;
+const superFireballSpeed = 5;
+const superFireballCooldown = 20000;
 
 
 
@@ -137,8 +140,39 @@ window.addEventListener('keyup', (e) => {
             };
             lastWindWallTime = Date.now();
         }
-        
     }
+
+    // Detect 'R' key press to shoot super Fireballs
+    if (e.key.toLowerCase() === 'r') {
+        let canSpawnSuperFireball = true;
+
+        // Check if fireball cooldown has passed
+        let TimeSinceLastSuperFireball = Date.now() - lastSuperFireballTime;
+        
+        if (TimeSinceLastSuperFireball < superFireballCooldown) {
+            canSpawnSuperFireball = false; // Still on cooldown
+        }
+
+        const dx = mouseX - player1.x;
+        const dy = mouseY - player1.y;
+        const distance = Math.sqrt(dx * dx + dy * dy);
+
+        if (distance > 0 && canSpawnSuperFireball) {
+            projectiles.push({
+                x: player1.x,
+                y: player1.y,
+                vx: (dx / distance) * superFireballSpeed,
+                vy: (dy / distance) * superFireballSpeed,
+                size: 50,
+                color: 'red',
+                type: 'superFireball'
+            });
+            lastSuperFireballTime = Date.now(); // Update last shot time
+        }
+    }
+
+    
+
 });
 
 
