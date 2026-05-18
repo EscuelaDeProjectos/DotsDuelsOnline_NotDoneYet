@@ -240,6 +240,7 @@ function gameLoop() {
                     localY > -windWall.height / 2  && 
                     localY < windWall.height / 2 ) {
                     windWall = null;
+                    projectiles.splice(i, 1);
                     continue;
                 }
             } else {
