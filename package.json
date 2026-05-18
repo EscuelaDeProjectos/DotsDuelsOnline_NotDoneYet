@@ -1,0 +1,11 @@
+{
+  "name": "dotsduelsonline",
+  "version": "0.1.0",
+  "main": "index.js",
+  "scripts": {
+    "init-db": "node database/init_db.js"
+  },
+  "dependencies": {
+    "sqlite3": "^5.1.6"
+  }
+}
