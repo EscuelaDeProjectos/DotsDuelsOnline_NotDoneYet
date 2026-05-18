@@ -10,8 +10,19 @@
     </head>
     <body>
         <h1 id="title">Online</h1>
-        <canvas id="gameCanvas" width="900" height="700"></canvas>
-        <script  src="./game.js"></script>
+
+        <div id="authPanel" style="background:#111;padding:12px;border-radius:6px;margin-bottom:10px;">
+            <div id="messages" style="color:lightgreen;margin-bottom:8px;"></div>
+            <input id="nameInput" placeholder="Enter name" />
+            <input id="passwordInput" type="password" placeholder="Enter password" style="margin-top:6px;" />
+            <button id="registerBtn">Register</button>
+            <button id="loginBtn">Login</button>
+            <button id="goGameBtn" style="display:none;margin-left:8px;">Go to Game</button>
+        </div>
+
+        <canvas id="gameCanvas" width="900" height="700" style="display:none"></canvas>
+        <script src="./auth.js"></script>
+        <script src="./game.js"></script>
 
         <h3 id="Cooldowns">
             Q Cooldown <span id="QCooldown">Ready</span>
