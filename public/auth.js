@@ -5,7 +5,7 @@ const registerBtn = document.getElementById('registerBtn');
 const loginBtn = document.getElementById('loginBtn');
 const goGameBtn = document.getElementById('goGameBtn');
 const messages = document.getElementById('messages');
-const canvas = document.getElementById('gameCanvas');
+const gameCanvas = document.getElementById('gameCanvas');
 
 function showMessage(text, color='lightgreen'){
   messages.style.color = color;
@@ -68,7 +68,7 @@ loginBtn.addEventListener('click', async ()=>{
 goGameBtn.addEventListener('click', ()=>{
   // Show canvas and hide auth panel
   document.getElementById('authPanel').style.display = 'none';
-  canvas.style.display = 'block';
+  gameCanvas.style.display = 'block';
 });
 
 checkLogged();
