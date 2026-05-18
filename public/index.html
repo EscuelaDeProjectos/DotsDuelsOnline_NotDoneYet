@@ -11,13 +11,17 @@
     <body>
         <h1 id="title">Online</h1>
 
-        <form id="authForm" style="background:#111;padding:12px;border-radius:6px;margin-bottom:10px;" onsubmit="return false;">
-            <div id="messages" style="color:lightgreen;margin-bottom:8px;"></div>
-            <input id="nameInput" placeholder="Enter name" />
-            <input id="passwordInput" type="password" placeholder="Enter password" style="margin-top:6px;" />
-            <button type="button" id="registerBtn">Register</button>
-            <button type="button" id="loginBtn">Login</button>
-            <button type="button" id="goGameBtn" style="display:none;margin-left:8px;">Go to Game</button>
+        <form id="authPanel" class="auth-panel" onsubmit="return false;">
+            <div id="welcomeBanner" class="welcome-banner" style="display:none;"></div>
+            <div id="messages" class="auth-message"></div>
+            <input id="nameInput" name="username" autocomplete="username" placeholder="Enter name" class="auth-input" />
+            <input id="passwordInput" name="password" type="password" autocomplete="current-password" placeholder="Enter password" class="auth-input" />
+            <div class="auth-buttons">
+                <button type="button" id="registerBtn" class="auth-button">Register</button>
+                <button type="button" id="loginBtn" class="auth-button">Login</button>
+                <button type="button" id="goGameBtn" class="auth-button auth-game-button">Go to Game</button>
+                <button type="button" id="logoutBtn" class="auth-button auth-logout-button" style="display:none;">Logout</button>
+            </div>
         </form>
 
         <canvas id="gameCanvas" width="900" height="700" style="display:none"></canvas>

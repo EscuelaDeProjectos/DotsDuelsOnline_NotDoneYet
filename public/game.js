@@ -58,10 +58,12 @@ const keysPressed = {};
 
 // Input Listeners
 window.addEventListener('keydown', (e) => {
+    if (!e || !e.key) return;
     keysPressed[e.key.toLowerCase()] = true;
 });
 
 window.addEventListener('keyup', (e) => {
+    if (!e || !e.key) return;
     keysPressed[e.key.toLowerCase()] = false;
 });
 
@@ -74,6 +76,7 @@ window.addEventListener('mousemove', (e) => {
 
 
 window.addEventListener('keyup', (e) => {
+    if (!e || !e.key) return;
     // Detect 'q' key press to shoot  fireballs
     if (e.key.toLowerCase() === 'q') {
         let canSpawnFireball = true;
