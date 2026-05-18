@@ -1,5 +1,9 @@
 const canvas = document.getElementById('gameCanvas');
 const ctx = canvas.getContext('2d');
+const gameOverOverlay = document.getElementById('gameOverOverlay');
+const restartGameBtn = document.getElementById('restartGameBtn');
+const homeBtn = document.getElementById('homeBtn');
+let gameOver = false;
 
 // Game Objects
 const player1 = { x: 0, y: 0, size: 10, color: 'blue', hp: 200, maxHp: 200, class: 0, lastHitAt: 0, invulnDuration: 500 }; 
@@ -418,6 +422,11 @@ function gameLoop() {
         }
     }
 
+    if (player1.hp <= 0 && !gameOver) {
+        showGameOver();
+        return;
+    }
+
     // Update player1 and player2 movement
 
     if (keysPressed['w']) player1.y -= player1speed;
@@ -528,6 +537,48 @@ function gameLoop() {
     }
 
     requestAnimationFrame(gameLoop);
+}
+
+function showGameOver() {
+    gameOver = true;
+    if (gameOverOverlay) {
+        gameOverOverlay.style.display = 'flex';
+    }
+}
+
+function resetGame() {
+    gameOver = false;
+    player1.hp = player1.maxHp;
+    player1.x = canvas.width / 2;
+    player1.y = canvas.height / 20;
+    player1.lastHitAt = 0;
+    projectiles.length = 0;
+    windWall = null;
+    Object.keys(keysPressed).forEach((key) => keysPressed[key] = false);
+    if (gameOverOverlay) {
+        gameOverOverlay.style.display = 'none';
+    }
+}
+
+if (restartGameBtn) {
+    restartGameBtn.addEventListener('click', () => {
+        resetGame();
+        gameLoop();
+    });
+}
+
+if (homeBtn) {
+    homeBtn.addEventListener('click', () => {
+        resetGame();
+        if (gameOverOverlay) {
+            gameOverOverlay.style.display = 'none';
+        }
+        canvas.style.display = 'none';
+        const authPanel = document.getElementById('authPanel');
+        if (authPanel) {
+            authPanel.style.display = 'flex';
+        }
+    });
 }
 
 gameLoop();

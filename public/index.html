@@ -25,6 +25,16 @@
         </form>
 
         <canvas id="gameCanvas" width="900" height="700" style="display:none"></canvas>
+        <div id="gameOverOverlay" class="game-over-overlay" style="display:none;">
+            <div class="game-over-card">
+                <h2>Game Over</h2>
+                <p id="gameOverText">You have been defeated.</p>
+                <div class="game-over-buttons">
+                    <button id="restartGameBtn" class="auth-button">Restart Game</button>
+                    <button id="homeBtn" class="auth-button auth-logout-button">Back to Home</button>
+                </div>
+            </div>
+        </div>
         <script src="./auth.js"></script>
         <script src="./game.js"></script>
 
