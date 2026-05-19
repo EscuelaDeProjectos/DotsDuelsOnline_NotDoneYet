@@ -1,4 +1,10 @@
 {
+
+
+  "scripts": {
+    "start": "node server.js"
+  }
+  
   "name": "dotsduelsonline",
   "version": "0.1.0",
   "main": "index.js",
